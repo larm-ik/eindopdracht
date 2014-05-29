@@ -48,20 +48,8 @@ def lemma_of_head(node,tree):
 def pt_of_head(node,tree):
     ant = resolve_index(node,tree)
     pt = ant.get('pt')
-    cat = ant.get('cat')
     if pt:
         return pt
-    if cat == 'mwu':
-        pts = []
-        for child in ant:
-            childant = resolve_index(child,tree)
-            lem = childant.get('pt')
-            pts.append(lem)
-        return "_".join(pts)
-    for child in ant:
-        rel = child.get('rel')
-        if rel == 'hd':
-            return pt_of_head(child,tree)
     return None
 
 def createDict(bestand):
@@ -71,11 +59,11 @@ def createDict(bestand):
     file.close()
     for filename in sys.argv[1:]:
         print("< Het corpus ", filename, " wordt nu geindexeerd. >")
-        
+
         reader=alpinocorpus.CorpusReader(filename)
 
         dictionary = {}
-    
+
         for file in reader.entries():
             xml = reader.read(file.name())
             xml = xml.encode('utf-8')
@@ -111,7 +99,7 @@ def createDict(bestand):
                                     if dictionary.get(su, "No") == "No":
                                         dictionary[su] = {temp:1}
                                     else:
-                                        dictionary[su][temp] = dictionary[su].get(temp, 0) + 1 
+                                        dictionary[su][temp] = dictionary[su].get(temp, 0) + 1
 
         file = open(bestand, 'r')
         fileDict = eval(file.read())
@@ -123,7 +111,7 @@ def createDict(bestand):
         print("< Het corpus ", filename, " is succesvol geindexeerd. >")
     print("")
     print("< De dictionary ", bestand, " is succesvol gecreerd en opgeslagen. >")
-    
+
 def main():
     print("==========================SAME WORDS V1.0==========================")
     print("= Dit programma geeft u de mogelijkheid om een zelfstandig        =")
@@ -159,7 +147,7 @@ def main():
     corpusDictKeys = []
     for key in corpusDict.keys():
         corpusDictKeys.append(key)
-        
+
     searchword = input("Welk woord wilt u zoeken? ( [ENTER] om te stoppen ) > ")
     while searchword != "":
         if searchword not in corpusDictKeys:
@@ -204,7 +192,7 @@ def main():
             searchDictDistance = []
             for relation in searchDictKeys:
                 searchDictDistance.append(corpusDict[searchword][relation])
-            
+
             distDict = {}
             for key, value in corpusDict.items():
                 #if key != searchword:
@@ -242,7 +230,7 @@ def main():
         corpusDictKeys = []
         for key in corpusDict.keys():
             corpusDictKeys.append(key)
-            
+
         searchword = input("Welk woord wilt u zoeken? ( [ENTER] om te stoppen ) > ")
 
     print("===================================================================")

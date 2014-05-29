@@ -64,8 +64,14 @@ def pt_of_head(node,tree):
             return pt_of_head(child,tree)
     return None
 
-def createDict():
+def createDict(bestand):
+    emptyDict = {}
+    file = open(bestand, "w")
+    file.write(str(emptyDict))
+    file.close()
     for filename in sys.argv[1:]:
+        print("< Het corpus ", filename, " wordt nu geindexeerd. >")
+        
         reader=alpinocorpus.CorpusReader(filename)
 
         dictionary = {}
@@ -107,11 +113,16 @@ def createDict():
                                     else:
                                         dictionary[su][temp] = dictionary[su].get(temp, 0) + 1 
 
-    file = open("dict.dat", "w")
-    file.write(str(dictionary))
-    file.close()
-    print("De dictionary is succesvol gecreerd en opgeslagen.")
-    print("Bestandsnaam: dict.dat")
+        file = open(bestand, 'r')
+        fileDict = eval(file.read())
+        file.close()
+        fileDict.update(dictionary)
+        file = open(bestand, "w")
+        file.write(str(fileDict))
+        file.close()
+        print("< Het corpus ", filename, " is succesvol geindexeerd. >")
+    print("")
+    print("< De dictionary ", bestand, " is succesvol gecreerd en opgeslagen. >")
     
 def main():
     print("==========================SAME WORDS V1.0==========================")
@@ -130,115 +141,110 @@ def main():
         question = input("Wilt u de dictionary creeren en opslaan? (y/n) > ")
     if question in ['y', 'Y', 'yes', 'Yes']:
         print("")
-        print("Het corpus wordt doorzocht.")
-        print("Afhankelijk van de snelheid van uw computer kan dit even duren.")
-        print("...")
-        createDict()
+        bestandsnaam = input("Bestandsnaam > ")
+        createDict(bestandsnaam)
+        #createDict()
         print("")
     else:
         print("")
-        print("De dictionary wordt niet opnieuw gecreerd en opgeslagen.")
-        print("Wanneer het bestand dict.dat zich reeds in uw map bevind")
-        print("wordt deze dictionary gebruikt. Bevind dit bestand zich")
-        print("nog niet in uw map, dan krijgt u een foutmelding.")
-        print("Voer dit programma dan nogmaals uit en kies in het begin")
-        print("voor 'yes' om een dictionary te creeren en op te slaan.")
+        print("U heeft ervoor gekozen geen nieuwe dictionary te creeren.")
+        print("Welke bestaande externe dictionary wilt u gebruiken?")
+        bestandsnaam = input("Bestandsnaam > ")
         print("")
 
-    file = open('dict.dat', 'r')
+    file = open(bestandsnaam, 'r')
     corpusDict = eval(file.read())
+    file.close()
     # Create list with all keys
     corpusDictKeys = []
     for key in corpusDict.keys():
         corpusDictKeys.append(key)
         
-    searchword = input("Welk woord wilt u zoeken? > ")
-    while searchword not in corpusDictKeys:
-        print("< Het door u ingevoerde zoekwoord staat niet in het gebruikte >")
-        print("< corpus. Voer een ander woord in dat wel in het corpus staat >")
-        print("< of gebruik een uitgebreider corpus.                         >")
-        print("")
-        searchword = input("Welk woord wilt u zoeken? > ")
+    searchword = input("Welk woord wilt u zoeken? ( [ENTER] om te stoppen ) > ")
+    while searchword != "":
+        if searchword not in corpusDictKeys:
+            print("< Het door u ingevoerde zoekwoord staat niet in het gebruikte >")
+            print("< corpus. Voer een ander woord in dat wel in het corpus staat >")
+            print("< of gebruik een uitgebreider corpus.                         >")
+            print("")
+        else:
+            # Create search-vector
+            searchDict = corpusDict[searchword]
+            searchDictKeys = []
+            for key in searchDict.keys():
+                searchDictKeys.append(key)
 
-    # Create search-vector
-    searchDict = corpusDict[searchword]
-    searchDictKeys = []
-    for key in searchDict.keys():
-        searchDictKeys.append(key)
+            # Pop relations in 2nd demension
+            deleteKeys = {}
+            emptyList = []
+            for key in corpusDict.keys():
+                for relation in corpusDict[key].keys():
+                    if relation not in searchDictKeys:
+                        if key not in deleteKeys:
+                            deleteKeys[key] = [relation]
+                        else:
+                            tempList = deleteKeys.get(key)
+                            tempList.append(relation)
+                            deleteKeys[key] = tempList
 
-    # Pop relations in 2nd demension
-    deleteKeys = {}
-    emptyList = []
-    for key in corpusDict.keys():
-        for relation in corpusDict[key].keys():
-            if relation not in searchDictKeys:
-                if key not in deleteKeys:
-                    deleteKeys[key] = [relation]
-                else:
-                    tempList = deleteKeys.get(key)
-                    tempList.append(relation)
-                    deleteKeys[key] = tempList
+            for key, value in deleteKeys.items():
+                for item in value:
+                   corpusDict[key].pop(item)
 
-    for key, value in deleteKeys.items():
-        for item in value:
-           corpusDict[key].pop(item)
+            # Add relations with count 0 to 2nd demension
+            for key in corpusDict.keys():
+                relationList = []
+                for relation in corpusDict[key].keys():
+                    relationList.append(relation)
+                for relation in searchDictKeys:
+                    if relation not in relationList:
+                        corpusDict[key][relation] = 0
 
-    # Add relations with count 0 to 2nd demension
-    for key in corpusDict.keys():
-        relationList = []
-        for relation in corpusDict[key].keys():
-            relationList.append(relation)
-        for relation in searchDictKeys:
-            if relation not in relationList:
-                corpusDict[key][relation] = 0
-
-    # Calculate distance and save in distDict
-    searchDictDistance = []
-    for relation in searchDictKeys:
-        searchDictDistance.append(corpusDict[searchword][relation])
-    
-    distDict = {}
-    for key, value in corpusDict.items():
-        #if key != searchword:
-            distanceList = []
+            # Calculate distance and save in distDict
+            searchDictDistance = []
             for relation in searchDictKeys:
-                distanceList.append(corpusDict[key][relation])
-            count = 0
-            for i in range(len(searchDictDistance)):
-                a = searchDictDistance[i]
-                b = distanceList[i]
-                count = count + ( min(a,b) / (a+b) )
-            distance = 2*count
-            distDict[key] = distance
+                searchDictDistance.append(corpusDict[searchword][relation])
+            
+            distDict = {}
+            for key, value in corpusDict.items():
+                #if key != searchword:
+                    distanceList = []
+                    for relation in searchDictKeys:
+                        distanceList.append(corpusDict[key][relation])
+                    count = 0
+                    for i in range(len(searchDictDistance)):
+                        a = searchDictDistance[i]
+                        b = distanceList[i]
+                        count = count + ( min(a,b) / (a+b) )
+                    distance = 2*count
+                    distDict[key] = distance
 
-    # Create sorted list from distDict
-    distDictSorted = sorted(distDict, key=distDict.get)
-    distDictSorted = reversed(distDictSorted)
-    distDictSorted = list(distDictSorted)
+            # Create sorted list from distDict
+            distDictSorted = sorted(distDict, key=distDict.get)
+            distDictSorted = reversed(distDictSorted)
+            distDictSorted = list(distDictSorted)
 
-    # Determine best 10 words
-    print("")
-    print("")
-    print("Best 10 matches:")
-    print("")
-    first10Words = distDictSorted[:10]
-    for word in first10Words:
-        match = ( distDict[word] * 100 ) / distDict[searchword]
-        print("{0:<30}{1:<.2f}%".format(word, match))
-    print("")
+            # Determine best 10 words
+            print("")
+            print("Best 10 matches:")
+            print("")
+            first10Words = distDictSorted[:10]
+            for word in first10Words:
+                match = ( distDict[word] * 100 ) / distDict[searchword]
+                print("{0:<30}{1:<.2f}%".format(word, match))
+            print("")
 
-    # Show only best matches
-    print("")
-    print("")
-    print("Only best matches (60% >):")
-    print("")
-    for word in distDictSorted:
-        match = ( distDict[word] * 100 ) / distDict[searchword]
-        if match > 60:
-            print("{0:<30}{1:<.2f}%".format(word, match))
-    print("")
-    
-    print("")
+        # Initialize variables again
+        searchDict = {}
+        file = open(bestandsnaam, 'r')
+        corpusDict = eval(file.read())
+        file.close()
+        corpusDictKeys = []
+        for key in corpusDict.keys():
+            corpusDictKeys.append(key)
+            
+        searchword = input("Welk woord wilt u zoeken? ( [ENTER] om te stoppen ) > ")
+
     print("===================================================================")
     print("= Dit programma werd u aangeboden door Aileen Bus,                =")
     print("= Reinard van Dalen, Mathijs van Maurik en Leon Melein.           =")

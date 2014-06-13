@@ -189,12 +189,11 @@ def main():
                     distanceList = []
                     for relation in searchDictKeys:
                         distanceList.append(corpusDict[key][relation])
-                    count = 0
+                    distance = 0
                     for i in range(len(searchDictDistance)):
                         a = searchDictDistance[i]
                         b = distanceList[i]
-                        count = count + ( min(a,b) / (a+b) )
-                    distance = 2*count
+                        distance = distance + 2* (( min(a,b) / (a+b) ))
                     distDict[key] = distance
 
             # Create sorted list from distDict
